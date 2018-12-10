@@ -1,0 +1,18 @@
+[telegram]
+    token = 
+
+    [telegram:authorized_users]
+        username = 
+
+[server]
+    name = 
+    [server:disks]
+        root = 
+        home = 
+    [server:cmd]
+        cmd1 = 
+        cmd2 = 
+
+[wakeonlan]
+    machine1 = 
+    machine2 = 

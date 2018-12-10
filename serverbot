@@ -1,0 +1,197 @@
+import argparse
+import configparser
+import logging
+from time import sleep
+from telegram.ext import Updater, CommandHandler
+
+from libserverbot.Config import Config
+from libserverbot.Server import Server
+
+class ServerBot():
+
+    def __init__(self):
+
+        # args
+        parser = argparse.ArgumentParser(description='Telegram bot to manage a Raspbery Pi server')
+        parser.add_argument('-c', '--config-file', type=str, help='Path to the config file', required=True)
+        args = parser.parse_args()
+
+        # config
+        self.bot_config = Config()
+        config_parser = configparser.ConfigParser()
+        config_parser.read(args.config_file)
+        self.bot_config.set(config_parser)
+
+        self.server = Server(self.bot_config.disks, self.bot_config.slaves)
+
+        self.cmd_list = []
+
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                            level=logging.INFO)
+        self.log = logging.getLogger(__name__)
+
+
+    def main(self):
+
+
+        def start(bot, update):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to use me.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            message = 'Hello {} {}!'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+            update.message.reply_text(message)
+            sleep(1)
+            message = "I'm a bot, You can send me commands and I will execute them on {}.".format(self.bot_config.name)
+            update.message.reply_text(message)
+            sleep(2)
+            message='Here is the list of commands that you can send to me:'
+            for cmd in self.cmd_list:
+                message = message + '\n    /{}'.format(cmd)
+            update.message.reply_text(message)
+
+
+        def hello(bot, update):
+            update.message.reply_text(
+                'Hello {} {}!'.format(update.message.from_user.first_name, update.message.from_user.last_name))
+
+
+        def disk(bot, update):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            for disk in self.server.get_disks_usage():
+                message = '{} ({})\n{}% full\nTotal: {} GB\nUsed: {} GB\nFree: {} GB'.format(disk['name'], disk['path'], disk['percent'], disk['total'], disk['used'], disk['free'])
+                update.message.reply_text(message)
+
+        def uptime(bot, update):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            uptime = self.server.uptime()
+            message = '{} is up for {} days, {} hours and {} minutes.'.format(self.bot_config.name, uptime['days'], uptime['hours'], uptime['minutes'])
+            update.message.reply_text(message)
+
+        def memory(bot, update):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            memory = self.server.memory()
+            swap = self.server.swap()
+            message = 'Memory:\n{}% full\nTotal: {} GB\nUsed: {} GB\nBuffered: {} GB\nCached: {} GB\nFree: {} GB\n'.format(memory['percent'], memory['total'], memory['used'], memory['buffers'], memory['cached'], memory['free'])
+            update.message.reply_text(message)
+            message = 'Swap:\n{}% full\nTotal: {} GB\nUsed: {} GB\nFree: {} GB\n'.format(swap['percent'], swap['total'], swap['used'], swap['free'])
+            update.message.reply_text(message)
+
+        def wakeonlan(bot, update, args):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            if not args:
+                if not self.bot_config.slaves:
+                    # No slaves
+                    message = 'No server to wake'
+                    update.message.reply_text(message)
+                elif len(self.bot_config.slaves) == 1:
+                    # One slave, wake it
+                    message = 'Sending magic packet to {}'.format(self.bot_config.slaves[0]['name'])
+                    update.message.reply_text(message)
+                    self.server.wakeonlan(self.bot_config.slaves[0]['mac'])
+                else:
+                    # More, print help
+                    message = 'Available machines:'
+                    for slave in self.bot_config.slaves:
+                        message = message + '\n- {}'.format(slave['name'])
+                    update.message.reply_text(message)
+
+            elif len(args) == 1:
+                if args[0] in self.bot_config.available_slaves:
+                    message = 'Sending magic packet to {}'.format(args[0])
+                    update.message.reply_text(message)
+                    self.server.wakeonlan(self.bot_config.get_mac(args[0]))
+
+            else:
+                message = 'Usage: \n    /wakeonlan <machine>'
+                update.message.reply_text(message)
+
+        def shutdown(bot, update):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            message = 'Goodbye {} {}!'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+            update.message.reply_text(message)      
+            self.server.shutdown()
+
+        def cmd(bot, update, args):
+
+            if update.message.from_user.username not in self.bot_config.authorized_users:
+                self.log.info('{} is not authorized to launch {}'.format(update.message.from_user.id, update.message.text))
+                message = 'Sorry {} {}, You\'re not authorized to trigger this command.'.format(update.message.from_user.first_name, update.message.from_user.last_name)
+                update.message.reply_text(message)
+                return
+
+            help_message = 'Usage:\n  /cmd <command>\nAvailable commands:'
+            for command in self.bot_config.available_cmd:
+                help_message = help_message + '\n  - {}'.format(command)
+
+            if not args:
+                update.message.reply_text(help_message)
+            elif len(args) > 1:
+                update.message.reply_text(help_message)
+            else:
+                # run
+                if args[0] in self.bot_config.available_cmd:
+                    message = self.server.cmd(self.bot_config.get_cmd(args[0]))
+                    update.message.reply_text(message)
+                else:
+                    update.message.reply_text(help_message)
+ 
+
+        updater = Updater(self.bot_config.token)
+
+        updater.dispatcher.add_handler(CommandHandler('start', start))
+        updater.dispatcher.add_handler(CommandHandler('hello', hello))
+        updater.dispatcher.add_handler(CommandHandler('disk', disk))
+        updater.dispatcher.add_handler(CommandHandler('uptime', uptime))
+        updater.dispatcher.add_handler(CommandHandler('memory', memory))
+        updater.dispatcher.add_handler(CommandHandler('wakeonlan', wakeonlan, pass_args=True))
+        updater.dispatcher.add_handler(CommandHandler('shutdown', shutdown))
+        updater.dispatcher.add_handler(CommandHandler('cmd', cmd, pass_args=True))
+
+        for handler in updater.dispatcher.handlers[0]:
+            if handler.command[0] == 'start':
+                continue
+            self.cmd_list.append(handler.command[0])
+
+        updater.start_polling()
+        updater.idle()
+
+
+
+
+if __name__ == '__main__':
+
+    ServerBot().main()
