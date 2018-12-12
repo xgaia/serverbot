@@ -12,13 +12,13 @@ First, you will need a telegram bot. Ask this to [BotFather](https://t.me/botfat
 Configure it with `/setcommands` and sent this:
 
 ```
-/hello - say hello
-/disk - show hard drives usage
-/uptime - uptime
-/memory - show memory and swap usage
-/wakeonlan - wake machines
-/shutdown - shutdown server
-/cmd - run custom commands
+hello - say hello
+disk - show hard drives usage
+uptime - uptime
+memory - show memory and swap usage
+wakeonlan - wake machines
+shutdown - shutdown server
+cmd - run custom commands
 ```
 
 ### Install, configure and run ServerBot
