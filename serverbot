@@ -80,7 +80,7 @@ class ServerBot():
                 return
 
             uptime = self.server.uptime()
-            message = '{} is up for {} days, {} hours and {} minutes.'.format(self.bot_config.name, uptime['days'], uptime['hours'], uptime['minutes'])
+            message = '{} is up for {} days, {} hours, {} minutes and {} seconds.'.format(self.bot_config.name, uptime['days'], uptime['hours'], uptime['minutes'], uptime['seconds'])
             update.message.reply_text(message)
 
         def memory(bot, update):

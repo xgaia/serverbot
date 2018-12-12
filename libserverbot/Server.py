@@ -48,14 +48,17 @@ class Server():
         now = time.time()
         uptime = now - boot_time
 
-        days = int(decimal.Decimal(uptime/3600/24).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
-        hours = int(decimal.Decimal((uptime/3600) - (24 * days)).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
-        minutes = int(decimal.Decimal((uptime/60) - (3600 * hours) - (24 * days)).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
+        duration = datetime.timedelta(seconds=uptime)
+        days, seconds = duration.days, duration.seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = (seconds % 60)
 
         return {
             'days': days,
             'hours': hours,
-            'minutes': minutes
+            'minutes': minutes,
+            'seconds': seconds
         }
 
     def memory(self):
