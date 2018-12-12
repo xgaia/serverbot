@@ -50,7 +50,7 @@ class Server():
 
         days = int(decimal.Decimal(uptime/3600/24).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
         hours = int(decimal.Decimal((uptime/3600) - (24 * days)).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
-        minutes = int(decimal.Decimal((uptime/60) - (60 * hours)).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
+        minutes = int(decimal.Decimal((uptime/60) - (60 * hours) - (24 * days)).quantize(decimal.Decimal('0'), rounding=decimal.ROUND_DOWN))
 
         return {
             'days': days,
