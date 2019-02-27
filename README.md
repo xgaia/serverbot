@@ -21,7 +21,7 @@ shutdown - shutdown server
 cmd - run custom commands
 ```
 
-### Install, configure and run ServerBot
+### Install
 
 Install depandancies:
 
@@ -36,6 +36,20 @@ Clone the repo
 git clone https://github.com/xgaia/serverbot.git
 cd serverbot
 ```
+Create and source a Python virtual environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Install
+
+```bash
+python3 setup.py install
+```
+
+### Configure
 
 Create a config file with the template and edit it
 
@@ -44,15 +58,54 @@ cp config.ini.template config.ini
 vim config.ini # Edit the file
 ```
 
-Create and source a Python virtual environment
+- [telegram]
+    - token: the bot token
+    - [telegram:authorized_users]: list of username who are authorized to use the bot. Example: `me = xgaiia`
+
+- [server]
+    - name: the name of the managed server
+    - [server:disks]: disks path to manage. Example: `root = /`
+    - [server:cmd]: list of shell command. Example: `ls = ls -l`
+
+- [wakeonlan]: list of machine to wake. Example: `warmachine = 00:00:00:00:00:00 `
+
+
+### Run
+
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+serverbot -c /path/to/config.ini
 ```
 
-Install bot and run
+### Run as a service
+
+Create a  `/etc/systemd/system/serverbot.service` file like:
+
+```
+[Unit]
+Description=Telegram bot to manage a Linux server
+After=network.target
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/path/to/serverbot -c /path/to/serverbot/config.ini
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+```
+
+Control the service
 
 ```bash
-python3 setup.py install
+# Control whether bot start on boot
+systemctl enable serverbot
+systemctl disable serverbot
+
+# Manual start and stop
+systemctl start serverbot
+systemctl stop serverbot
+
+# Status
+systemctl status serverbot
 ```
