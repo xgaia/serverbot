@@ -23,11 +23,11 @@ cmd - run custom commands
 
 ### Install
 
-Install depandancies:
+Install dependencies:
 
 ```bash
 # Debian/Ubuntu
-sudo apt install python3 python3-pip python3-venv
+sudo apt install make python3 python3-pip python3-venv
 ```
 
 Clone the repo
@@ -36,17 +36,11 @@ Clone the repo
 git clone https://github.com/xgaia/serverbot.git
 cd serverbot
 ```
-Create and source a Python virtual environment
+
+Install all python dependencies in a python virtual env
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-Install
-
-```bash
-python3 setup.py install
+make install
 ```
 
 ### Configure
@@ -54,7 +48,7 @@ python3 setup.py install
 Create a config file with the template and edit it
 
 ```bash
-cp config.ini.template config.ini
+make configure
 vim config.ini # Edit the file
 ```
 
@@ -74,7 +68,7 @@ vim config.ini # Edit the file
 
 
 ```bash
-serverbot -c /path/to/config.ini
+make build run
 ```
 
 ### Run as a service
